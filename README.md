@@ -26,7 +26,7 @@ Asisten lokal untuk frontend engineer:
 
 ## Prasyarat
 
-- Ram Minimum (16GB)
+- Ram Minimal (16GB)
 - Docker (Desktop / CLI)
 - Node.js 22.x + pnpm (atau npm)
 
