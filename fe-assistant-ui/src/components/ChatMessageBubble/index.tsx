@@ -1,4 +1,3 @@
-// components/ChatMessageBubble.tsx
 "use client";
 
 import type { ChatMessage } from "./../types";
