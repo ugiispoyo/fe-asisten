@@ -4,7 +4,7 @@ import { sliceLayoutFromImage } from '../llm/vision';
 import { appendLog } from '../logs/logs';   
 
 const router = express.Router();
-const upload = multer({ dest: 'uploads/' });
+const upload = multer({ dest: 'data/uploads' });
 
 /**
  * POST /slice-from-image
