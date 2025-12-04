@@ -1,6 +1,7 @@
 // src/routes/feedback.ts
 import express from 'express';
 import { updateLogFeedback } from '../logs/feedback';
+import { saveMemory } from '../memory/memory';
 
 const router = express.Router();
 
@@ -41,6 +42,15 @@ router.post('/', (req, res) => {
       rating,
       comment,
     });
+
+    if (rating === 'good' && comment && comment.trim().length > 0) {
+      saveMemory(
+        sessionId,
+        'correction',
+        comment.trim(),
+        ['from-feedback'] // tags opsional
+      );
+    }
 
     return res.json({ ok: true });
   } catch (err) {
