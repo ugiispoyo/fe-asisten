@@ -11,5 +11,3 @@ services:
       - VISION_MODEL=qwen2.5vl:3b
     volumes:
       - ./ollama-data:/root/.ollama           # storage model
-      - ./ollama-init.sh:/usr/local/bin/ollama-init.sh
-    entrypoint: ["/usr/local/bin/ollama-init.sh"]

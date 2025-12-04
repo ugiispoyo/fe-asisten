@@ -7,9 +7,10 @@
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "llm:chmod": "chmod +x ./ollama-init.sh || true",
-    "llm:up": "pnpm llm:chmod && docker compose up -d llm",
-    "dev:stack": "pnpm llm:up && pnpm dev"
+    "llm:up": "docker compose up -d llm",
+    "llm:pull": "docker exec fe-llm ollama pull qwen2.5-coder:3b && docker exec fe-llm ollama pull qwen2.5vl:3b",
+    "llm:wait": "sh -c 'echo \"[llm:wait] waiting for ollama models...\"; until docker exec fe-llm ollama list | grep -q qwen2.5-coder:3b && docker exec fe-llm ollama list | grep -q qwen2.5vl:3b; do sleep 3; done; echo \"[llm:wait] models ready\"'",
+    "dev:stack": "pnpm llm:up && pnpm llm:wait && pnpm dev"
   },
   "dependencies": {
     "cors": "^2.8.5",
