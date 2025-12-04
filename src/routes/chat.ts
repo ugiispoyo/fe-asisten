@@ -1,6 +1,7 @@
 import express from 'express';
 import { chatWithCoder } from '../llm/coder';
 import { getRelevantMemories } from '../memory/memory';
+import { appendLog } from '../logs/logs';
 
 const router = express.Router();
 
@@ -47,6 +48,23 @@ router.post('/', async (req, res) => {
     ];
 
     const answer = await chatWithCoder(messages);
+    
+    const createdAt = new Date().toISOString();
+    const logId = `${sessionId}-${createdAt}`;
+
+    appendLog({
+      id: logId,
+      session_id: sessionId,
+      model: process.env.CODER_MODEL ?? 'qwen2.5-coder:3b',
+      messages: [
+        { role: 'user', content: message },
+        { role: 'assistant', content: answer },
+      ],
+      used_memory_ids: memories.map((m) => m.id),
+      rating: null,
+      source: 'chat',
+      created_at: createdAt,
+    });
 
     res.json({ answer });
   } catch (err) {
