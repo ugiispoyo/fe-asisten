@@ -5,13 +5,9 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "dev:stack": "sh scripts/dev-stack.sh",
     "build": "tsc",
-    "start": "node dist/server.js",
-    "llm:up": "docker compose up -d llm",
-    "llm:pull": "docker exec fe-llm ollama pull qwen2.5-coder:3b && docker exec fe-llm ollama pull qwen2.5vl:3b",
-    "llm:wait": "sh -c 'echo \"[llm:wait] waiting for ollama models...\"; until docker exec fe-llm ollama list | grep -q qwen2.5-coder:3b && docker exec fe-llm ollama list | grep -q qwen2.5vl:3b; do sleep 3; done; echo \"[llm:wait] models ready\"'",
-    "dev:stack": "pnpm llm:up && pnpm llm:wait && pnpm dev",
-    "dataset:build": "ts-node src/tools/buildDataset.ts"
+    "start": "node dist/server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",
