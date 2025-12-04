@@ -27,18 +27,11 @@ Asisten lokal untuk frontend engineer:
 ## Prasyarat
 
 - Ram Minimal (16GB)
-- Docker (Desktop / CLI)
 - Node.js 22.x + pnpm (atau npm)
 
 ## Cara jalanin
 
-### 1. Start stack
-
-```bash
-docker compose up -d
-```
-
-### 2. Cara Pakai
+### 1. Cara Pakai
 
 - Run api 
 
@@ -46,8 +39,14 @@ docker compose up -d
 pnpm run dev:stack
 ```
 
-- Run di port
+- Run di port (API)
 
 ```bash
 http://localhost:4217
 ```
+
+- Run WEB UI
+
+```bash
+cd/fe-assistant-ui
+pnpm run dev
