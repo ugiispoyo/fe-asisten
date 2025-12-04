@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "dev:stack": "sh scripts/dev-stack.sh",
+    "dataset:build": "ts-node src/tools/buildDataset.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },

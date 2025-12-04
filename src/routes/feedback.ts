@@ -1,38 +1,52 @@
+// src/routes/feedback.ts
 import express from 'express';
-import { saveMemory } from '../memory/memory';
+import { updateLogFeedback } from '../logs/feedback';
 
 const router = express.Router();
 
 /**
- * Endpoint untuk nyimpen koreksi / preferensi user.
+ * POST /feedback
  *
- * Contoh body:
+ * Body:
  * {
- *   "sessionId": "fe-project",
- *   "type": "correction",
- *   "content": "Di project ini pakai React Query, jangan useEffect manual",
- *   "tags": ["react-query", "fetch"]
+ *   "sessionId": "sess-xxx",
+ *   "messageId": "log-id-yang-mau-di-rate",
+ *   "rating": "good" | "bad",
+ *   "comment": "opsional"
  * }
  */
 router.post('/', (req, res) => {
   const {
     sessionId = 'default',
-    type = 'correction',
-    content,
-    tags = [],
+    messageId,
+    rating,
+    comment,
   } = req.body as {
     sessionId?: string;
-    type?: string;
-    content?: string;
-    tags?: string[];
+    messageId?: string;
+    rating?: 'good' | 'bad';
+    comment?: string;
   };
 
-  if (!content) {
-    return res.status(400).json({ error: 'content is required' });
+  if (!messageId || !rating) {
+    return res
+      .status(400)
+      .json({ error: 'messageId and rating are required' });
   }
 
-  saveMemory(sessionId, type, content, tags);
-  res.json({ ok: true });
+  try {
+    updateLogFeedback({
+      sessionId,
+      messageId,
+      rating,
+      comment,
+    });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error('[feedback] failed to update log:', err);
+    return res.status(500).json({ error: 'failed to update feedback' });
+  }
 });
 
 export default router;

@@ -1,79 +1,74 @@
 import express from 'express';
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { sliceLayoutFromImage } from '../llm/vision';
-import { getRelevantMemories } from '../memory/memory';
+import { sliceLayoutFromImage } from '../llm/vision'; 
+import { appendLog } from '../logs/logs';   
 
 const router = express.Router();
+const upload = multer({ dest: 'uploads/' });
 
-// Simpan upload di ./data/uploads (masih dalam volume assistant-data)
-const uploadsDir = path.join(process.cwd(), 'data', 'uploads');
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-}
-
-const upload = multer({
-  dest: uploadsDir,
-});
-
+/**
+ * POST /slice-from-image
+ * Form-data:
+ *   - file: image/*
+ *   - instructions: string (prompt user)
+ *   - sessionId: string
+ */
 router.post('/', upload.single('file'), async (req, res) => {
-  const file = req.file;
-  const { instructions = '', sessionId = 'default' } = req.body as {
-    instructions?: string;
-    sessionId?: string;
-  };
-
-  if (!file) {
-    return res.status(400).json({ error: 'file is required (field name: "file")' });
-  }
-
   try {
-    // Ambil memori relevan (biar style konsisten per project)
-    const memories = getRelevantMemories(sessionId, 'layout');
-    const memoryText =
-      memories.length === 0
-        ? '- (belum ada catatan khusus)'
-        : memories.map((m) => `- ${m.content}`).join('\n');
+    const file = req.file;
+    const { instructions = '', sessionId = 'default' } = req.body as {
+      instructions?: string;
+      sessionId?: string;
+    };
 
-    const prompt = `
-Kamu adalah frontend engineer ahli React + TypeScript + Tailwind CSS.
+    if (!file) {
+      return res.status(400).json({ error: 'file is required' });
+    }
 
-Tugasmu:
-1. Lihat desain pada gambar yang aku kirim.
-2. Jelaskan dulu struktur layout dalam bentuk teks:
-   - Berapa section?
-   - Grid / flex seperti apa?
-   - Spacing, padding, margin utama?
-   - Tipografi penting (heading, body).
-3. Setelah itu, tuliskan contoh kode:
-   - React + TypeScript (functional component).
-   - Tailwind CSS untuk layout dan styling dasar.
-   - Jangan terlalu banyak dummy data; cukup contoh yang representatif.
+    // 1) Panggil vision model (qwen2.5vl) untuk dapetin deskripsi + kode
+    const result = await sliceLayoutFromImage(
+      instructions,
+      file.path,
+    );
 
-Catatan preferensi & koreksi user (kalau ada):
-${memoryText}
+    // 2) Log ke logs.jsonl supaya bisa di-rating dan dipakai fine-tune
+    const createdAt = new Date().toISOString();
+    const logId = `slice-${sessionId}-${createdAt}`;
 
-Instruksi tambahan user:
-${instructions || '- (tidak ada)'}
-`.trim();
-
-    const result = await sliceLayoutFromImage(prompt, file.path);
-
-    // optional: hapus file setelah diproses biar nggak numpuk
-    fs.unlink(file.path, (err) => {
-      if (err) {
-        console.warn('Failed to delete uploaded file:', err);
-      }
+    appendLog({
+      id: logId,
+      session_id: sessionId,
+      model: process.env.VISION_MODEL ?? 'qwen2.5vl:3b',
+      messages: [
+        {
+          role: 'user',
+          content:
+            `# Slicing dari gambar\n` +
+            `User mengupload gambar (path lokal: ${file.path}) dan memberi instruksi:\n` +
+            `"${instructions}"\n\n` +
+            `Deskripsikan layout + generate kode React/Next.js + Tailwind yang sesuai.`, // <-- jadi text-only instruction untuk fine-tune
+        },
+        {
+          role: 'assistant',
+          content: result, // teks yang kamu kirim balik ke UI
+        },
+      ],
+      used_memory_ids: [],         // kalau kamu pakai memory, isi di sini
+      rating: null,                // nanti diupdate via /feedback
+      source: 'slice',             // ⬅️ tanda bahwa ini log dari slicing
+      created_at: createdAt,
+      feedback_comment: undefined, // nanti diisi dari feedback
     });
 
+    // 3) Balikin hasil + logId ke frontend
     res.json({
       ok: true,
       result,
+      logId,
     });
   } catch (err) {
-    console.error('Error in /slice-from-image:', err);
-    res.status(500).json({ error: 'internal_error' });
+    console.error('[slice-from-image] error:', err);
+    res.status(500).json({ error: 'failed to process image' });
   }
 });
 

@@ -8,26 +8,24 @@ export type LogEntry = {
   session_id: string;
   model: string;
   messages: LogMessage[];
-  used_memory_ids: number[];
-  rating: 'good' | 'bad' | 'needs_review' | null;
-  source: 'chat' | 'api' | 'test';
+  used_memory_ids?: number[];
+  rating?: 'good' | 'bad' | 'needs_review' | null | string;
+  source?: 'chat' | 'slice' | 'api' | 'test' | string;
   created_at: string;
+  feedback_comment?: string;
 };
 
 const dataDir = path.join(process.cwd(), 'data');
 const logsPath = path.join(dataDir, 'logs.jsonl');
 
-function ensureLogsFile() {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  if (!fs.existsSync(logsPath)) {
-    fs.writeFileSync(logsPath, '', 'utf-8');
+function ensureDir(dir: string) {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
   }
 }
 
 export function appendLog(entry: LogEntry) {
-  ensureLogsFile();
+  ensureDir(dataDir);
   const line = JSON.stringify(entry);
   fs.appendFileSync(logsPath, line + '\n', 'utf-8');
 }

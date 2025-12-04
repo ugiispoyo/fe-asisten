@@ -2,6 +2,10 @@
 import fs from 'fs';
 import path from 'path';
 
+/**
+ * Tipe data sesuai struktur yang kita pakai di memories.json & logs.jsonl
+ */
+
 type Memory = {
   id: number;
   session_id: string;
@@ -25,19 +29,24 @@ type LogEntry = {
   rating?: 'good' | 'bad' | 'needs_review' | null | string;
   source?: 'chat' | 'api' | 'test' | string;
   created_at: string;
+  feedback_comment?: string;
 };
 
 type DatasetSample = {
+  id: string;
+  source: 'memory' | 'log';
+  session_id: string;
   instruction: string;
   input: string;
   output: string;
-  source: 'memory' | 'log';
-  session_id?: string;
+  rating?: 'good' | 'bad';
+  comment?: string;
   tags?: string[];
   created_at?: string;
   meta?: Record<string, unknown>;
 };
 
+// Path file
 const DATA_DIR = path.join(process.cwd(), 'data');
 const MEMORIES_PATH = path.join(DATA_DIR, 'memories.json');
 const LOGS_PATH = path.join(DATA_DIR, 'logs.jsonl');
@@ -76,7 +85,8 @@ function loadLogs(): LogEntry[] {
     return [];
   }
 
-  const lines = fs.readFileSync(LOGS_PATH, 'utf-8')
+  const lines = fs
+    .readFileSync(LOGS_PATH, 'utf-8')
     .split('\n')
     .map((l) => l.trim())
     .filter((l) => l.length > 0);
@@ -93,39 +103,59 @@ function loadLogs(): LogEntry[] {
   return result;
 }
 
-function sampleFromMemory(mem: Memory): DatasetSample | null {
-  const instructionBase = mem.content?.trim();
-  const instruction = instructionBase || 'Perbaiki jawaban berikut sesuai preferensi project.';
+/**
+ * Utility: normalisasi string, trim + hilangin spasi berlebih
+ */
+function normalize(str: string | undefined | null): string {
+  if (!str) return '';
+  return str.replace(/\s+/g, ' ').trim();
+}
 
-  // Kalau ada ideal_output, itu yang paling berharga.
-  const output = (mem.ideal_output ?? '').trim();
-  const input = (mem.input ?? '').trim();
+/**
+ * Konversi Memory → DatasetSample
+ * - Butuh ideal_output yang non-empty
+ * - content jadi instruction
+ * - input (kalau ada) jadi "input"
+ */
+function sampleFromMemory(mem: Memory): DatasetSample | null {
+  const instruction = normalize(mem.content);
+  const input = normalize(mem.input ?? '');
+  const output = normalize(mem.ideal_output ?? '');
 
   if (!output) {
-    // Kalau nggak ada ideal_output, ya value mem-nya kurang berguna buat fine-tune.
-    // Optional: fallback: treat content as output.
-    console.warn(`[buildDataset] Memory ${mem.id} has no ideal_output, skip`);
+    console.warn(
+      `[buildDataset] Memory ${mem.id} has no ideal_output, skip (but consider melengkapi ideal_output kalau mau dipakai fine-tune)`
+    );
     return null;
   }
 
+  const id = `mem-${mem.id}`;
+
   return {
-    instruction,
-    input: input,
-    output,
+    id,
     source: 'memory',
     session_id: mem.session_id,
+    instruction:
+      instruction || 'Terapkan preferensi/aturan berikut pada jawaban model.',
+    input,
+    output,
     tags: mem.tags ?? [],
     created_at: mem.created_at,
     meta: {
       type: mem.type,
       reason: mem.reason ?? '',
-      memory_id: mem.id,
     },
   };
 }
 
+/**
+ * Konversi LogEntry → DatasetSample
+ * - Hanya pakai log dengan rating 'good'
+ * - instruction = user terakhir
+ * - output = assistant terakhir
+ * - comment feedback & rating masuk ke field comment/meta
+ */
 function sampleFromLog(log: LogEntry): DatasetSample | null {
-  // Hanya pakai log yang sudah diberi rating 'good'
   if (log.rating !== 'good') {
     return null;
   }
@@ -138,48 +168,55 @@ function sampleFromLog(log: LogEntry): DatasetSample | null {
     return null;
   }
 
-  // Ambil user terakhir & assistant terakhir (umumnya 1:1)
   const user = userMessages[userMessages.length - 1];
   const assistant = assistantMessages[assistantMessages.length - 1];
 
-  const instruction = user.content.trim();
-  const output = assistant.content.trim();
+  const instruction = normalize(user.content);
+  const output = normalize(assistant.content);
 
   if (!instruction || !output) {
     console.warn(`[buildDataset] Log ${log.id} has empty instruction/output, skip`);
     return null;
   }
 
+  const id = `log-${log.id}`;
+
   return {
+    id,
+    source: 'log',
+    session_id: log.session_id,
     instruction,
     input: '',
     output,
-    source: 'log',
-    session_id: log.session_id,
+    rating: log.rating === 'good' ? 'good' : undefined,
+    comment: log.feedback_comment || undefined,
     created_at: log.created_at,
     meta: {
-      log_id: log.id,
       model: log.model,
-      source: log.source ?? 'chat',
+      log_source: log.source ?? 'chat',
       used_memory_ids: log.used_memory_ids ?? [],
-      rating: log.rating ?? null,
     },
   };
 }
 
 function buildDataset() {
-  console.log('[buildDataset] Loading memories & logs...');
+  console.log('🧱 [buildDataset] Start building dataset...');
+  console.log(`   - memories:  ${MEMORIES_PATH}`);
+  console.log(`   - logs:      ${LOGS_PATH}`);
+  console.log(`   - output:    ${DATASET_PATH}`);
 
   const memories = loadMemories();
   const logs = loadLogs();
 
   const samples: DatasetSample[] = [];
 
+  // 1) dari memories
   for (const mem of memories) {
     const sample = sampleFromMemory(mem);
     if (sample) samples.push(sample);
   }
 
+  // 2) dari logs (rating good)
   for (const log of logs) {
     const sample = sampleFromLog(log);
     if (sample) samples.push(sample);
@@ -195,7 +232,10 @@ function buildDataset() {
   const lines = samples.map((s) => JSON.stringify(s));
   fs.writeFileSync(DATASET_PATH, lines.join('\n') + '\n', 'utf-8');
 
-  console.log(`[buildDataset] Done. Wrote ${samples.length} samples to ${DATASET_PATH}`);
+  console.log(
+    `✅ [buildDataset] Done. Wrote ${samples.length} samples to ${DATASET_PATH}`
+  );
 }
 
+// jalankan langsung kalau file ini di-run via ts-node
 buildDataset();

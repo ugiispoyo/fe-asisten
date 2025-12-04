@@ -1,0 +1,106 @@
+{
+	"info": {
+		"_postman_id": "b970234e-d543-40ce-8c29-a860c74550b7",
+		"name": "fe-asisten",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "834483"
+	},
+	"item": [
+		{
+			"name": "Check Health",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:4217/health",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4217",
+					"path": [
+						"health"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Chat",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"message\": \"Buatin component yg ada flex bos tiga bagian yg responsive\"\n}\n",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost:4217/chat",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4217",
+					"path": [
+						"chat"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Check List Model",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://localhost:11434/api/tags",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "11434",
+					"path": [
+						"api",
+						"tags"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Slicing Design",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "file",
+							"type": "file",
+							"src": "/Users/ugi/Desktop/Screenshot 2025-12-04 at 20.38.12.png"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://localhost:4217/slice-from-image",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"port": "4217",
+					"path": [
+						"slice-from-image"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

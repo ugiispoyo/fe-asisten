@@ -6,7 +6,7 @@ import { appendLog } from '../logs/logs';
 const router = express.Router();
 
 const SYSTEM_PROMPT = `
-Kamu adalah asisten coding frontend.
+Kamu adalah asisten coding frontend sebagai Senior Frontend Engineer yang sangat jago.
 
 - Ikuti bahasa user (Indonesia / Inggris / campuran).
 - Default stack: React + Nextjs + TypeScript + Tailwind CSS.
@@ -48,7 +48,7 @@ router.post('/', async (req, res) => {
     ];
 
     const answer = await chatWithCoder(messages);
-    
+
     const createdAt = new Date().toISOString();
     const logId = `${sessionId}-${createdAt}`;
 
@@ -60,13 +60,17 @@ router.post('/', async (req, res) => {
         { role: 'user', content: message },
         { role: 'assistant', content: answer },
       ],
-      used_memory_ids: memories.map((m) => m.id),
+      used_memory_ids: [], // atau isi sesuai implementasi kamu
       rating: null,
       source: 'chat',
       created_at: createdAt,
     });
 
-    res.json({ answer });
+    // ⬅️ kirim juga logId ke frontend
+    res.json({
+      answer,
+      logId, // <--- ini yang penting
+    });
   } catch (err) {
     console.error('Error in /chat:', err);
     res.status(500).json({ error: 'internal_error' });
