@@ -1,4 +1,6 @@
 # dependencies
 /node_modules
+
+# database
 /ollama-data
 /data/

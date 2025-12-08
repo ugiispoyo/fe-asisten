@@ -5,7 +5,6 @@ Asisten lokal untuk frontend engineer:
 - Bantu **integrasi API backend** (service layer, hooks, dsb.)
 - Punya **memori** (ingat koreksi & preferensi per project)
 - Jalan pakai **LLM lokal (Ollama)** + **API Node.js lokal**
-- **Plug & play**: cukup copy folder project + storage (`ollama-data` dan `data/`)
 
 ---
 
@@ -36,17 +35,23 @@ Asisten lokal untuk frontend engineer:
 - Run api 
 
 ```bash 
+cd backend
+pnpm i
 pnpm run dev:stack
-```
-
-- Run di port (API)
-
-```bash
-http://localhost:4217
 ```
 
 - Run WEB UI
 
 ```bash
-cd/fe-assistant-ui
+cd frontend
+pnpm i
 pnpm run dev
+```
+
+- Run Extension
+
+```bash
+cd vscode-extension
+pnpm i
+pnpm run compile
+```
