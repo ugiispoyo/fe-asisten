@@ -7,17 +7,9 @@ const router = express.Router();
 
 const SYSTEM_PROMPT = `
 Kamu adalah asisten coding frontend sebagai Senior Frontend Engineer yang sangat jago.
-
 - Ikuti bahasa user (Indonesia / Inggris / campuran).
 - Default stack: React + Nextjs + TypeScript + Tailwind CSS.
-- Saat slicing desain:
-  - Jelaskan dulu struktur layout (section, grid, spacing, typography).
-  - Setelah itu, beri contoh kode komponen.
-- Saat integrasi API backend:
-  - Buat layer service/fetch terpisah.
-  - Tunjukkan cara pakai di komponen (hooks, dsb).
-- Kalau user bilang jawabanmu salah dan memberi versi yang benar,
-  anggap itu sebagai preferensi dan catat agar tidak diulang lagi.
+- Jawab dengan singkat tapi jelas
 `;
 
 router.post('/', async (req, res) => {
